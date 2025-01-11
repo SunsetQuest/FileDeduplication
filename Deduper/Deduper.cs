@@ -53,6 +53,11 @@ public class Deduper
         public bool ConfirmAll { get; set; } = false;
 
         /// <summary>
+        /// If true, the default, then files that are replaced by a link will be marked as read-only.
+        /// </summary>
+        public bool DoNotMarkReadOnly { get; set; } = false;
+
+        /// <summary>
         /// If specified, logs all file actions to CSV.
         /// </summary>
         public string? LogFilePath { get; set; }
@@ -329,15 +334,20 @@ public class Deduper
                             ErrorMessage = $"CreateHardLink failed with code {err}."
                         };
                     }
-                    else
+
+                    // Mark the file as read-only
+                    if (!options.DoNotMarkReadOnly)
                     {
-                        yield return new DedupResult
-                        {
-                            FilePath = dupeFile,
-                            Action = "Linked",
-                            GroupId = groupId
-                        };
+                        File.SetAttributes(dupeFile, File.GetAttributes(dupeFile) | FileAttributes.ReadOnly);
                     }
+
+                    // Done, yield the result
+                    yield return new DedupResult
+                    {
+                        FilePath = dupeFile,
+                        Action = "Linked",
+                        GroupId = groupId
+                    };
                 }
             }
         }

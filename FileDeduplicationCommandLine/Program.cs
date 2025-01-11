@@ -7,7 +7,11 @@ internal class Program
 {
     private static void Main(string[] args)
     {
-        args = ["S:\\Test",]; //   ,"-confirm"
+        args = [
+            "S:\\Test",
+            //   ,"-confirm",
+            "-log", "S:\\FileDedup.csv"
+            ];
 
         if (args.Length == 0 || args.Contains("-help", StringComparer.OrdinalIgnoreCase))
         {
@@ -17,6 +21,7 @@ internal class Program
 
         string targetDirectory = args[0];
         bool confirmAll = args.Contains("-confirm", StringComparer.OrdinalIgnoreCase);
+        bool doNotMarkReadOnly = args.Contains("-DoNotMarkReadOnly", StringComparer.OrdinalIgnoreCase);
         string? logFile = null;
 
         // If user specified "-Log someFilePath"
@@ -48,6 +53,7 @@ internal class Program
         DedupOptions options = new()
         {
             ConfirmAll = confirmAll,
+            DoNotMarkReadOnly = doNotMarkReadOnly,
             LogFilePath = logFile,
             ConfirmCallback = (filePath) =>
             {
@@ -201,10 +207,18 @@ internal class Program
         Console.WriteLine("FileDedup.exe <TargetFolder> [options]");
         Console.WriteLine("   This tool was created by ChatGPT.");
         Console.WriteLine();
+        Console.WriteLine("Caution: Modifying a hard-linked file later will affect all linked files.");
+        Console.WriteLine("         Always make sure you have a backup before using this tool.");
+        Console.WriteLine();
         Console.WriteLine("Options:");
         Console.WriteLine("  -help      Shows this help text.");
         Console.WriteLine("  -confirm   Automatically confirm creation of all hard links without prompting.");
+        Console.WriteLine("  -DoNotMarkReadOnly   Does not mark all hard-linked files as read-only.");
         Console.WriteLine("  -log <file>  Writes actions to a CSV log file.");
+        Console.WriteLine();
+        Console.WriteLine("Notes:");
+        Console.WriteLine("  - All hard-linked files are marked as read-only by default.");
+        Console.WriteLine("  - To modify a hard-linked file, you must remove the read-only attribute.");
         Console.WriteLine();
         Console.WriteLine("Examples:");
         Console.WriteLine("  FileDedup.exe C:\\MyTargetFolder -confirm");
