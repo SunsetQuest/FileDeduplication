@@ -1,4 +1,6 @@
-﻿// Ignore Spelling: Deduplicate Deduper
+﻿
+
+// Ignore Spelling: Deduplicate Deduper
 
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -147,6 +149,19 @@ public class Deduper
 
         foreach (string file in allFiles)
         {
+            // Check if file is read-only and skip if it is
+            FileAttributes attributes = File.GetAttributes(file);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                yield return new DedupResult
+                {
+                    FilePath = file,
+                    Action = "Skipped",
+                    ErrorMessage = "File is read-only."
+                };
+                continue;
+            }
+
             // Skip symbolic links to folders (and possibly to files as well).
             if (IsDirectorySymlink(file))
             {
