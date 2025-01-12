@@ -337,7 +337,7 @@ public class Deduper
                     }
 
                     // Create the replacement hard link
-                    bool success = CreateHardLink(dupeFile, masterFile);
+                    bool success = FileSystemTools.CreateHardLink(dupeFile, masterFile);
                     if (!success)
                     {
                         int err = Marshal.GetLastPInvokeError();
@@ -348,12 +348,11 @@ public class Deduper
                             GroupId = groupId,
                             ErrorMessage = $"CreateHardLink failed with code {err}."
                         };
-                    }
-
-                    // Mark the file as read-only
-                    if (!options.DoNotMarkReadOnly)
-                    {
-                        File.SetAttributes(dupeFile, File.GetAttributes(dupeFile) | FileAttributes.ReadOnly);
+                        // Mark the file as read-only
+                        if (!options.DoNotMarkReadOnly)
+                        {
+                            File.SetAttributes(dupeFile, File.GetAttributes(dupeFile) | FileAttributes.ReadOnly);
+                        }
                     }
 
                     // Done, yield the result
@@ -462,15 +461,7 @@ public class Deduper
         return BitConverter.ToString(hash).Replace("-", "");
     }
 
-    /// <summary>
-    /// Creates a hard link from linkPath to existingFileName.
-    /// Returns false if it fails.
-    /// </summary>
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern bool CreateHardLink(
-        string lpFileName,
-        string lpExistingFileName,
-        nint lpSecurityAttributes = default);
+
 
     #endregion
 }

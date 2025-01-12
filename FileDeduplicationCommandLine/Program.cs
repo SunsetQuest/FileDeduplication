@@ -7,11 +7,13 @@ internal class Program
 {
     private static void Main(string[] args)
     {
-        args = [
-            "S:\\Test",
-            //   ,"-confirm",
-            "-log", "S:\\FileDedup.csv"
-            ];
+        //////// For Testing Purposes //////
+        //args = [
+        //    "S:\\Test",
+        //    //   ,"-confirm",
+        //    "-log", "S:\\FileDedup.csv"
+        //    ];
+        ////////////////////////////////////
 
         if (args.Length == 0 || args.Contains("-help", StringComparer.OrdinalIgnoreCase))
         {
