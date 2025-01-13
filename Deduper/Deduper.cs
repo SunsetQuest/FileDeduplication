@@ -461,7 +461,5 @@ public class Deduper
         return BitConverter.ToString(hash).Replace("-", "");
     }
 
-
-
     #endregion
 }

@@ -19,9 +19,9 @@ public static class FileSystemTools
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern bool CreateHardLink(
-        string lpFileName,
-        string lpExistingFileName,
-        nint lpSecurityAttributes = default);
+    string lpFileName,
+    string lpExistingFileName,
+    nint lpSecurityAttributes = default);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool CloseHandle(IntPtr hObject);
@@ -47,6 +47,95 @@ public static class FileSystemTools
     private const uint FILE_SHARE_DELETE = 0x00000004;
     private const uint OPEN_EXISTING = 3;
     private const uint FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
+
+    private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+
+    /// <summary>
+    /// A struct that uniquely identifies a file on a volume. 
+    /// We combine VolumeSerialNumber, FileIndexHigh, FileIndexLow.
+    /// </summary>
+    public struct FileIdentity : IEquatable<FileIdentity>
+    {
+        public uint VolumeSerialNumber;
+        public uint FileIndexHigh;
+        public uint FileIndexLow;
+
+        public bool Equals(FileIdentity other)
+        {
+            return VolumeSerialNumber == other.VolumeSerialNumber
+                && FileIndexHigh == other.FileIndexHigh
+                && FileIndexLow == other.FileIndexLow;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is FileIdentity other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            // Simple combination
+            unchecked
+            {
+                int hash = (int)VolumeSerialNumber;
+                hash = (hash * 397) ^ (int)FileIndexHigh;
+                hash = (hash * 397) ^ (int)FileIndexLow;
+                return hash;
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"{VolumeSerialNumber}-{FileIndexHigh}-{FileIndexLow}";
+        }
+    }
+
+    /// <summary>
+    /// Returns the FileIdentity (Volume + FileIndex) for the given file, or null on error.
+    /// </summary>
+    public static FileIdentity? GetFileIdentity(string filePath)
+    {
+        IntPtr hFile = IntPtr.Zero;
+        try
+        {
+            hFile = CreateFile(
+                filePath,
+                GENERIC_READ,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                IntPtr.Zero,
+                OPEN_EXISTING,
+                FILE_FLAG_BACKUP_SEMANTICS,
+                IntPtr.Zero);
+
+            if (hFile == INVALID_HANDLE_VALUE || hFile == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            if (!GetFileInformationByHandle(hFile, out BY_HANDLE_FILE_INFORMATION info))
+            {
+                return null;
+            }
+
+            return new FileIdentity
+            {
+                VolumeSerialNumber = info.VolumeSerialNumber,
+                FileIndexHigh = info.FileIndexHigh,
+                FileIndexLow = info.FileIndexLow,
+            };
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            if (hFile != IntPtr.Zero && hFile != INVALID_HANDLE_VALUE)
+            {
+                CloseHandle(hFile);
+            }
+        }
+    }
 
     /// <summary>
     /// Determines if a file is part of a hardlink and retrieves the hardlink count.
@@ -115,6 +204,4 @@ public static class FileSystemTools
             return false;
         }
     }
-
-    private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 }
